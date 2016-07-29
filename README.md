@@ -13,6 +13,8 @@ Example use keys:
 3 - stop
 
 Example based on this articles:
-http://www.gamedev.ru/code/articles/?id=4252
-http://3d-orange.com.ua/video-in-your-games-p1-ogg_theora/  
+
+1) http://www.gamedev.ru/code/articles/?id=4252
+
+2) http://3d-orange.com.ua/video-in-your-games-p1-ogg_theora/  
 

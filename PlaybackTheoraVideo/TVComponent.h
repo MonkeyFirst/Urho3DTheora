@@ -7,6 +7,14 @@
 #pragma comment( lib, "libogg_static.lib" )
 #pragma comment( lib, "libtheora_static.lib" )
 
+enum YUVP420PlaneType
+{
+	YUV_PLANE_Y,
+	YUV_PLANE_U,
+	YUV_PLANE_V,
+	YUV_PLANE_MAX_SIZE
+};
+
 class URHO3D_API TVComponent : public Component
 {
 	URHO3D_OBJECT(TVComponent, Component);
@@ -14,11 +22,12 @@ class URHO3D_API TVComponent : public Component
 public:
 	SharedPtr<StaticModel> outputModel;
 	SharedPtr<Material> outputMaterial;
-	SharedPtr<Texture2D> outputTexture;
-	SharedPtr<Image> outputImage;
+	SharedPtr<Texture2D> outputTexture[YUV_PLANE_MAX_SIZE];
 
 	unsigned prevTime_, prevFrame_;
-	char* frameData_;
+	unsigned char* framePlanarDataY_;
+	unsigned char* framePlanarDataU_;
+	unsigned char* framePlanarDataV_;
 
 	TVComponent(Context* context);
 	virtual ~TVComponent();
@@ -37,17 +46,15 @@ public:
 	int GetFrameWidth(void) const { return frameWidth_; };
 	int GetFrameHeight(void) const { return frameHeight_; };
 	float GetFramesPerSecond(void) const { return framesPerSecond_; };
-
-	void GetFrameRGB(char* outFrame, int pitch);
-	void GetFrameYUV444(char* outFrame, int pitch);
-
+	//void GetFrameRGB(char* outFrame, int pitch);
+	//void GetFrameYUV444(char* outFrame, int pitch);
+	void UpdatePlaneTextures();
 private:
 	void HandleUpdate(StringHash eventType, VariantMap& eventData);
 	bool OpenFile(String fileName);
 	int BufferData(void);
 	void DecodeVideoFrame(void);
 	bool InitTexture();
-	bool InitCopyBuffer();
 
 	File* file_;
 	float framesPerSecond_;
@@ -69,4 +76,5 @@ private:
 	theora_comment		m_TheoraComment;
 	theora_state		m_TheoraState;
 	yuv_buffer			m_YUVFrame;
+	
 };

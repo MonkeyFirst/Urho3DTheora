@@ -1,4 +1,4 @@
-<technique vs="Theora" ps="Theora" psdefines="DIFFMAP" >
+<technique vs="Theora" ps="Theora" psdefines="DIFFMAP NORMALMAP SPECMAP" >
     <pass name="base" />
     <pass name="prepass" psdefines="PREPASS" />
     <pass name="material" />

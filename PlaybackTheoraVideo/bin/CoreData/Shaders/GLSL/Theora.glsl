@@ -2,11 +2,7 @@
 #include "Samplers.glsl"
 #include "Transform.glsl"
 
-precision highp float;
-
-#if defined(DIFFMAP) || defined(ALPHAMAP)
-    varying vec2 vTexCoord;
-#endif
+varying vec2 vTexCoord;
 
 void VS()
 {
@@ -14,24 +10,23 @@ void VS()
     vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     
-    #ifdef DIFFMAP
-        vTexCoord = iTexCoord;
-    #endif
-}
+    vTexCoord = iTexCoord;
 
+}
+#line 17
 void PS()
 {
-    vec4 diffColor = cMatDiffColor;
-#line 25
-    #ifdef DIFFMAP
-        vec4 diffInput = vec4(1.0);
-        vec3 yuv = texture2D(sDiffMap, vTexCoord).xyz - vec3(0.0, 0.5, 0.5);
-         
-        yuv.x = 1.1643 * (yuv.x - 0.0625);
-        diffInput.x = yuv.x + (1.5958  * yuv.z);
-        diffInput.y = yuv.x - (0.39173 * yuv.y) - 0.81290 * yuv.z;
-        diffInput.z = yuv.x + (2.017   * yuv.y);
-         
-        gl_FragColor = diffInput;
-    #endif
+
+    float y = texture2D(sDiffMap, vTexCoord.xy).r;
+    float u = texture2D(sSpecMap, vTexCoord.xy).r - 0.5;
+    float v = texture2D(sNormalMap, vTexCoord.xy).r - 0.5;
+
+    float r = y + 1.13983*v;
+    float g = y - 0.39465*u-0.58060*v;
+    float b = y + 2.03211*u;
+
+    gl_FragColor = vec4(r,g,b,1);
+    
+    //gl_FragColor = vec4(y,y,y,1); // BW video
+    
 }

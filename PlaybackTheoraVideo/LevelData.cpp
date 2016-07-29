@@ -73,6 +73,8 @@ bool CLevelData::InitTVComponentForSceneNode(String nodeName)
 		{
 			tvc = tvNode->CreateComponent<TVComponent>();
 			tvc->OpenFileName("bbb_theora_486kbit.ogv");
+			//tvc->OpenFileName("trailer_400p.ogv"); //error!
+
 			StaticModel* sm = tvNode->GetComponent<StaticModel>();
 			tvc->SetOutputModel(sm);
 			ret = true;
@@ -98,7 +100,6 @@ void CLevelData::ViewRotate(float timeStep)
 	yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
 	pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
 	pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-	//yaw_ = Clamp(yaw_, -720.0f, 720.0f);
 
 	// Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
 	cameraNode->SetWorldRotation(Quaternion(pitch_, yaw_, 0.0f));

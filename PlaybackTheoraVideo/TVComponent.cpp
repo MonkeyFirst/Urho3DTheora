@@ -1,10 +1,5 @@
 #include "TVComponent.h"
 
-inline int clip(int t)
-{
-	return ((t < 0) ? (0) : ((t > 255) ? 255 : t));
-}
-
 TVComponent::TVComponent(Context* context) :
 	Component(context),
 	isFileOpened_(false),
@@ -12,24 +7,38 @@ TVComponent::TVComponent(Context* context) :
 	frameWidth_(0),
 	frameHeight_(0),
 	file_(0),
-	outputImage(0),
 	outputMaterial(0),
-	outputTexture(0),
 	prevTime_(0), 
 	prevFrame_(0),
-	frameData_(0)
+	framePlanarDataY_(0),
+	framePlanarDataU_(0),
+	framePlanarDataV_(0)
+
 {
-	SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(TVComponent, HandleUpdate));
+	SubscribeToEvent(E_SCENEPOSTUPDATE, URHO3D_HANDLER(TVComponent, HandleUpdate));
 }
 
 TVComponent::~TVComponent()
 {
 
-	if (frameData_)
+	if (framePlanarDataY_)
 	{
-		delete frameData_;
-		frameData_ = 0;
+		delete framePlanarDataY_;
+		framePlanarDataY_ = 0;
 	}
+
+	if (framePlanarDataU_)
+	{
+		delete framePlanarDataU_;
+		framePlanarDataU_ = 0;
+	}
+
+	if (framePlanarDataV_)
+	{
+		delete framePlanarDataV_;
+		framePlanarDataV_ = 0;
+	}
+
 }
 
 void TVComponent::RegisterObject(Context* context)
@@ -71,7 +80,7 @@ bool TVComponent::OpenFileName(String name)
 					break;
 				}
 
-				// iOrange - we nee to identify the stream
+				// we need to identify the stream
 
 				// 1) Init the test stream with the s/n from our page
 				ogg_stream_init(&test, ogg_page_serialno(&m_OggPage));
@@ -169,10 +178,11 @@ bool TVComponent::SetOutputModel(StaticModel* sm)
 	{
 		// Set model surface
 		outputModel = sm;
+		outputMaterial = sm->GetMaterial(0);
 
 		// Create textures & images
 		InitTexture();
-		InitCopyBuffer();
+		//InitCopyBuffer();
 		ScaleModelAccordingVideoRatio();
 	}
 
@@ -211,11 +221,7 @@ void TVComponent::HandleUpdate(StringHash eventType, VariantMap& eventData)
 	unsigned frame = Advance(timeStep);
 	if (!isStopped_ && prevFrame_ != frame)
 	{
-		GetFrameRGB(frameData_, frameWidth_);
-		//GetFrameYUV444(frameData_, frameWidth_);
-		outputImage->SetData((unsigned char*)frameData_);
-		outputTexture->SetData(outputImage);
-		
+		UpdatePlaneTextures();		
 	}
 
 	prevFrame_ = frame;
@@ -232,7 +238,9 @@ int TVComponent::BufferData(void)
 {
 	if (!file_) return 0;
 
-	static const int k_SyncBufferSize = 4096;
+	static const int k_SyncBufferSize = 8192;
+	//static const int k_SyncBufferSize = 4096;
+	
 	unsigned s = file_->GetSize();
 
 	// ask some buffer for putting data into stream
@@ -297,95 +305,119 @@ bool TVComponent::InitTexture()
 {
 	bool ret = false;
 
-	if (outputTexture)
+	// Try clear if using case of reassingn the movie file
+	for (int i = 0; i < YUV_PLANE_MAX_SIZE; ++i)
 	{
-		outputTexture->ReleaseRef();
-		outputTexture = 0;
+		if (outputTexture[i])
+		{
+			outputTexture[i]->ReleaseRef();
+			outputTexture[i] = 0;
+		}
 	}
 
-	if (outputImage)
+	// do this for fill m_YUVFrame with properly info about frame
+	Advance(0);
+
+	// Planes textures create
+	for (int i = 0; i < YUV_PLANE_MAX_SIZE; ++i)
 	{
-		outputImage->ReleaseRef();
-		outputImage = 0;
+		int texWidth = 0;
+		int texHeight = 0;
+
+		switch (i)
+		{
+		case YUV_PLANE_Y:
+			texWidth = m_YUVFrame.y_width;
+			texHeight = m_YUVFrame.y_height;
+			framePlanarDataY_ = new unsigned char[texWidth * texHeight];
+			break;
+		
+		case YUV_PLANE_U:
+			texWidth = m_YUVFrame.uv_width;
+			texHeight = m_YUVFrame.uv_height;
+			framePlanarDataU_ = new unsigned char[texWidth * texHeight];
+			break;
+
+		case YUV_PLANE_V:
+			texWidth = m_YUVFrame.uv_width;
+			texHeight = m_YUVFrame.uv_height;
+			framePlanarDataV_ = new unsigned char[texWidth * texHeight];
+			break;
+		}
+
+		outputTexture[i] = SharedPtr<Texture2D>(new Texture2D(context_));
+		outputTexture[i]->SetSize(texWidth, texHeight, Graphics::GetLuminanceFormat(), TEXTURE_DYNAMIC);
+		outputTexture[i]->SetFilterMode(FILTER_BILINEAR);
+		outputTexture[i]->SetNumLevels(1);
+		outputTexture[i]->SetAddressMode(TextureCoordinate::COORD_U, TextureAddressMode::ADDRESS_MIRROR);
+		outputTexture[i]->SetAddressMode(TextureCoordinate::COORD_V, TextureAddressMode::ADDRESS_MIRROR);
+
 	}
-
-	outputTexture = SharedPtr<Texture2D>(new Texture2D(context_));
-	outputTexture->SetSize(frameWidth_, frameHeight_, Graphics::GetRGBFormat(), TEXTURE_DYNAMIC);
-	outputTexture->SetFilterMode(FILTER_BILINEAR);
-	outputTexture->SetNumLevels(1);
-	outputTexture->SetAddressMode(TextureCoordinate::COORD_U, TextureAddressMode::ADDRESS_BORDER);
-	outputTexture->SetAddressMode(TextureCoordinate::COORD_V, TextureAddressMode::ADDRESS_BORDER);
 	
-
-	outputImage = SharedPtr<Image>(new Image(context_));
-	outputImage->SetSize(frameWidth_, frameHeight_, 3);
-	outputTexture->SetData(outputImage);
-
-	Material* mat = outputModel->GetMaterial(0);
-	Technique* t = mat->GetTechnique(0);
-	mat->SetTexture(TextureUnit::TU_DIFFUSE, outputTexture);
+	// assign planes textures into sepparated samplers for shader
+	outputMaterial->SetTexture(TextureUnit::TU_DIFFUSE, outputTexture[YUV_PLANE_Y]);
+	outputMaterial->SetTexture(TextureUnit::TU_SPECULAR, outputTexture[YUV_PLANE_U]);
+	outputMaterial->SetTexture(TextureUnit::TU_NORMAL, outputTexture[YUV_PLANE_V]);
 	
-
-	if (outputTexture && outputImage) ret = true;
-
+	outputModel->SetMaterial(0, outputMaterial);
 
 	return ret;
 	
 }
 
-void TVComponent::GetFrameRGB(char* outFrame, int pitch)
+void TVComponent::UpdatePlaneTextures() 
 {
-	for (int y = 0; y < frameHeight_; ++y)
+	Graphics* graphics = GetSubsystem<Graphics>();
+
+	// Convert non-planar YUV-frame into separated planar raw-textures 
+	for (int y = 0; y < m_YUVFrame.uv_height; ++y)
 	{
-		for (int x = 0; x < frameWidth_; ++x)
+		for (int x = 0; x < m_YUVFrame.uv_width; ++x)
 		{
-			const int off = x + y * pitch;
-			const int xx = x >> 1;
-			const int yy = y >> 1;
 
-			const int Y = static_cast<int>(m_YUVFrame.y[x + y * m_YUVFrame.y_stride]) - 16;
-			const int U = static_cast<int>(m_YUVFrame.u[xx + yy * m_YUVFrame.uv_stride]) - 128;
-			const int V = static_cast<int>(m_YUVFrame.v[xx + yy * m_YUVFrame.uv_stride]) - 128;
+			const int offsetUV = x + y * m_YUVFrame.uv_width;
 
-			outFrame[off * 3 + 0] = clip((298 * Y + 409 * V + 128) >> 8);
-			outFrame[off * 3 + 1] = clip((298 * Y - 100 * U - 208 * V + 128) >> 8);
-			outFrame[off * 3 + 2] = clip((298 * Y + 516 * U + 128) >> 8);
+			framePlanarDataU_[offsetUV] = m_YUVFrame.u[x + y * m_YUVFrame.uv_stride];
+			framePlanarDataV_[offsetUV] = m_YUVFrame.v[x + y * m_YUVFrame.uv_stride];
+
+			// 2x2 more work for Y
+
+			const int offsetLUTile = x + y * m_YUVFrame.y_width;
+			framePlanarDataY_[offsetLUTile] = m_YUVFrame.y[x + y * m_YUVFrame.y_stride];
+
+			const int offsetRUTile = m_YUVFrame.uv_width + x + y * m_YUVFrame.y_width;
+			framePlanarDataY_[offsetRUTile] = m_YUVFrame.y[m_YUVFrame.uv_width + x + y * m_YUVFrame.y_stride];
+
+			const int offsetLBTile = x + (y + m_YUVFrame.uv_height) * m_YUVFrame.y_width;
+			framePlanarDataY_[offsetLBTile] = m_YUVFrame.y[x + ((y + m_YUVFrame.uv_height) * m_YUVFrame.y_stride)];
+
+			const int offsetRBTile = (m_YUVFrame.uv_width + x) + (y + m_YUVFrame.uv_height) * m_YUVFrame.y_width;
+			framePlanarDataY_[offsetRBTile] = m_YUVFrame.y[(m_YUVFrame.uv_width + x) + ((y + m_YUVFrame.uv_height) * m_YUVFrame.y_stride)];
+
 		}
 	}
-}
 
-void TVComponent::GetFrameYUV444(char* outFrame, int pitch)
-{
-	for (int y = 0; y < frameHeight_; ++y)
+	// Fill textures with new data
+	for (int i = 0; i < YUV_PLANE_MAX_SIZE; ++i)
 	{
-		for (int x = 0; x < frameWidth_; ++x)
+		switch (i)
 		{
-			const int off = x + y * pitch;
-			const int xx = x >> 1;
-			const int yy = y >> 1;
+		case YUVP420PlaneType::YUV_PLANE_Y:
+			outputTexture[i]->SetSize(m_YUVFrame.y_width, m_YUVFrame.y_height, Graphics::GetLuminanceFormat(), TEXTURE_DYNAMIC);
+			outputTexture[i]->SetData(0, 0, 0, m_YUVFrame.y_width, m_YUVFrame.y_height, (const void*)framePlanarDataY_);			
+			break;
 
-			outFrame[off * 3 + 0] = m_YUVFrame.y[x + y * m_YUVFrame.y_stride];
-			outFrame[off * 3 + 1] = m_YUVFrame.u[xx + yy * m_YUVFrame.uv_stride];
-			outFrame[off * 3 + 2] = m_YUVFrame.v[xx + yy * m_YUVFrame.uv_stride];
+		case YUVP420PlaneType::YUV_PLANE_U:
+			outputTexture[i]->SetSize(m_YUVFrame.uv_width, m_YUVFrame.uv_height, Graphics::GetLuminanceFormat(), TEXTURE_DYNAMIC);
+			outputTexture[i]->SetData(0, 0, 0, m_YUVFrame.uv_width, m_YUVFrame.uv_height, (const void*)framePlanarDataU_);
+			break;
+
+		case YUVP420PlaneType::YUV_PLANE_V:
+			outputTexture[i]->SetSize(m_YUVFrame.uv_width, m_YUVFrame.uv_height, Graphics::GetLuminanceFormat(), TEXTURE_DYNAMIC);
+			outputTexture[i]->SetData(0, 0, 0, m_YUVFrame.uv_width, m_YUVFrame.uv_height, (const void*)framePlanarDataV_);
+			break;
 		}
 	}
-}
-
-
-bool TVComponent::InitCopyBuffer()
-{
-	bool ret = false;
-
-	if (frameData_) 
-	{
-		delete frameData_;
-		frameData_ = 0;
-	}
-
-	frameData_ = new char[frameWidth_ * frameHeight_ * 3];
-	
-
-	return (ret = frameData_ != 0);
 }
 
 void TVComponent::ScaleModelAccordingVideoRatio()

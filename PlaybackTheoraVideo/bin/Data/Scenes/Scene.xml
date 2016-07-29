@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1" />
+	<attribute name="Smoothing Constant" value="50" />
+	<attribute name="Snap Threshold" value="5" />
+	<attribute name="Elapsed Time" value="0" />
+	<attribute name="Next Replicated Node ID" value="1" />
+	<attribute name="Next Replicated Component ID" value="3" />
+	<attribute name="Next Local Node ID" value="16777233" />
+	<attribute name="Next Local Component ID" value="16777320" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="" />
+	<component type="Octree" id="1" />
+	<component type="DebugRenderer" id="2" />
+	<node id="16777217">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="16777228">
+			<attribute name="Model" value="Model;Models/Plane.mdl" />
+			<attribute name="Material" value="Material;Materials/Stone.xml" />
+		</component>
+	</node>
+	<node id="16777219">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0.323372 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Light" id="16777230">
+			<attribute name="Light Shape Texture" value="TextureCube;" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="16777220">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.141112 0.0580887 0.295326" />
+		<attribute name="Rotation" value="0.978745 0 -0.205078 0" />
+		<attribute name="Scale" value="0.115605 0.115605 0.115605" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="16777232">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="16777221">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.292285 0.0580887 -0.0870523" />
+		<attribute name="Rotation" value="0.948558 0 0.316604 0" />
+		<attribute name="Scale" value="0.115605 0.115605 0.115605" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="16777233">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;Materials/Stone.xml" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="16777222">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.272832 0.0580887 -0.0870523" />
+		<attribute name="Rotation" value="0.980334 0 0.197348 0" />
+		<attribute name="Scale" value="0.115605 0.115605 0.115605" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="16777234">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;" />
+			<attribute name="Cast Shadows" value="true" />
+		</component>
+	</node>
+	<node id="16777223">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="TV" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0.148775 -0.0847299" />
+		<attribute name="Rotation" value="0.707107 -0.707107 0 0" />
+		<attribute name="Scale" value="0.276867 0.276867 0.276867" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="16777235">
+			<attribute name="Model" value="Model;Models/Plane.mdl" />
+			<attribute name="Material" value="Material;Materials/TVmaterial.xml" />
+		</component>
+	</node>
+	<node id="16777227">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Player" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0.160031 -0.779777" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="16777228">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Camera" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0.193677" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="Camera" id="16777229">
+				<attribute name="Near Clip" value="0.01" />
+				<attribute name="Aspect Ratio" value="1.77778" />
+			</component>
+		</node>
+	</node>
+</scene>

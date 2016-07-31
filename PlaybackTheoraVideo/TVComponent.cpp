@@ -23,19 +23,19 @@ TVComponent::~TVComponent()
 
 	if (framePlanarDataY_)
 	{
-		delete framePlanarDataY_;
+		delete[] framePlanarDataY_;
 		framePlanarDataY_ = 0;
 	}
 
 	if (framePlanarDataU_)
 	{
-		delete framePlanarDataU_;
+		delete[] framePlanarDataU_;
 		framePlanarDataU_ = 0;
 	}
 
 	if (framePlanarDataV_)
 	{
-		delete framePlanarDataV_;
+		delete[] framePlanarDataV_;
 		framePlanarDataV_ = 0;
 	}
 
